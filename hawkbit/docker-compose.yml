@@ -7,59 +7,66 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
-version: '3'
+version: '3.7'
 
 services:
+  # ---------------------
+  # Postgres service
+  # ---------------------
+  postgres:
+    image: "postgres:16.5"
+    ports:
+      - "5432:5432"
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "admin"
+      POSTGRES_DB: "hawkbit"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 20s
+      retries: 10
 
   # ---------------------
   # RabbitMQ service
   # ---------------------
   rabbitmq:
-    image: "rabbitmq:3-management"
-    restart: always
+    image: "rabbitmq:3-management-alpine"
+    hostname: "rabbitmq"
+    environment:
+      RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
     ports:
       - "15672:15672"
       - "5672:5672"
-    labels:
-      NAME: "rabbitmq"
-
-  # ---------------------
-  # MySQL service
-  # ---------------------
-  mysql:
-    image: "mysql:8.0"
-    environment:
-      MYSQL_DATABASE: "hawkbit"
-      # MYSQL_USER: "root" is created by default in the container for mysql 8.0+
-      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-    restart: always
-    ports:
-      - "3307:3306"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      timeout: 20s
-      retries: 10
-    labels:
-      NAME: "mysql"
+    deploy:
+      restart_policy:
+        condition: on-failure
 
   # ---------------------
   # HawkBit service
   # ---------------------
   hawkbit:
-    image: "hawkbit/hawkbit-update-server:latest-mysql"
+    image: "hawkbit/hawkbit-update-server:0.8.0"
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:mariadb://mysql:3306/hawkbit'
+      - 'PROFILES=postgresql'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hawkbit'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=admin'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
       - 'SPRING_RABBITMQ_USERNAME=guest'
       - 'SPRING_RABBITMQ_PASSWORD=guest'
-      - 'SPRING_DATASOURCE_USERNAME=root'
+      - 'SERVER_FORWARD-HEADERS-STRATEGY=NATIVE'
     volumes:
       - artifactrepo:/artifactrepo
     restart: always
     ports:
       - "8090:8080"
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     labels:
       NAME: "hawkbit"
@@ -68,7 +75,7 @@ services:
   # HawkBit Simple UI service
   # ---------------------
   hawkbit-simple-ui:
-    image: "hawkbit/hawkbit-simple-ui:latest-mysql"
+    image: "hawkbit/hawkbit-simple-ui:0.8.0"
     environment:
       - 'SPRING_APPLICATION_JSON={"hawkbit.server.mgmtUrl": "http://hawkbit:8080"}'
     restart: always
