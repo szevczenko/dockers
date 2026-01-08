@@ -1,46 +1,11 @@
 version: '3.8'
 services:
-  app:
-    image: 'jc21/nginx-proxy-manager:2.12.2'
+  nginx:
+    image: nginx:alpine
     restart: unless-stopped
     ports:
-      # These ports are in format <host-port>:<container-port>
-      - '80:80' # Public HTTP Port
-      - '443:443' # Public HTTPS Port
-      - '81:81' # Admin Web Port
-      # Add any other Stream port you want to expose
-      # - '21:21' # FTP
-    environment:
-      # Mysql/Maria connection parameters:
-      DB_MYSQL_HOST: "db"
-      DB_MYSQL_PORT: 3306
-      DB_MYSQL_USER: "npm"
-      DB_MYSQL_PASSWORD: "npm"
-      DB_MYSQL_NAME: "npm"
-      # Uncomment this if IPv6 is not enabled on your host
-      # DISABLE_IPV6: 'true'
+      - '80:80'   # HTTP
+      - '443:443' # HTTPS
     volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-      - ./default.conf:/etc/nginx/conf.d/default.conf
-      - ./certbot/conf/:/etc/nginx/ssl/:ro
-      - ./client-cer/:/etc/nginx/client-cer/
-    depends_on:
-      - db
-
-  db:
-    image: 'jc21/mariadb-aria:10.11.5'
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: 'npm'
-      MYSQL_DATABASE: 'npm'
-      MYSQL_USER: 'npm'
-      MYSQL_PASSWORD: 'npm'
-      MARIADB_AUTO_UPGRADE: '1'
-    volumes:
-      - ./mysql:/var/lib/mysql
-
-  certbot:
-    image: certbot/certbot:latest
-    volumes:
-      - ./certbot/conf/:/etc/letsencrypt/:rw
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certificate/:/etc/nginx/certificate/:ro

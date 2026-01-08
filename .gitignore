@@ -1,7 +1,7 @@
 nginx/data
 nginx/mysql
 nginx/certbot/conf/renewal-hooks
-certificates_generator/ca
-certificates_generator/intermediate
-certificates_generator/out
-certificates_generator/server
+nginx/certificate
+hawkbit/certificate_generator/out
+hawkbit/certificate_generator/client_ca
+hawkbit/certificate_generator/server_ca
