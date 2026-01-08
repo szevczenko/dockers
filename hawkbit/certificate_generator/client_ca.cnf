@@ -1,0 +1,65 @@
+# OpenSSL configuration for Client CA
+# Used to sign client/device certificates
+
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+# Directory and file locations
+dir               = client_ca
+certs             = $dir/certs
+new_certs_dir     = $dir/newcerts
+database          = $dir/index.txt
+serial            = $dir/serial
+RANDFILE          = $dir/private/.rand
+
+# The Client CA key and certificate
+private_key       = $dir/private/client_ca.key
+certificate       = $dir/certs/client_ca.crt
+
+# SHA-256 for signing
+default_md        = sha256
+
+name_opt          = ca_default
+cert_opt          = ca_default
+default_days      = 3650
+preserve          = no
+
+policy            = policy_loose
+
+[ req ]
+# Options for certificate requests (CA creation only)
+default_bits        = 256
+distinguished_name  = req_distinguished_name
+string_mask         = utf8only
+default_md          = sha256
+x509_extensions     = v3_ca
+
+[ req_distinguished_name ]
+# Empty section - using -subj parameter in script
+
+[ v3_ca ]
+# Extensions for Client CA certificate
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+[ client_cert ]
+# Extensions for client certificates (devices)
+basicConstraints = CA:FALSE
+nsComment = "HQC Client Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+
+[ policy_loose ]
+# Allow flexible certificate fields
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional

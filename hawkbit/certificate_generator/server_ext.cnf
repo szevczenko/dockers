@@ -1,0 +1,9 @@
+[server_cert]
+basicConstraints = CA:FALSE
+nsCertType = server
+nsComment = "HawkBit Server Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = ${ENV::SERVER_DNS_NAMES}

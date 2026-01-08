@@ -1,22 +1,9 @@
-#
-# Copyright (c) 2018 Bosch Software Innovations GmbH and others
-#
-# This program and the accompanying materials are made
-# available under the terms of the Eclipse Public License 2.0
-# which is available at https://www.eclipse.org/legal/epl-2.0/
-#
-# SPDX-License-Identifier: EPL-2.0
-#
-version: '3.7'
-
 services:
   # ---------------------
   # Postgres service
   # ---------------------
   postgres:
     image: "postgres:16.5"
-    ports:
-      - "5432:5432"
     deploy:
       restart_policy:
         condition: on-failure
@@ -33,15 +20,12 @@ services:
   # RabbitMQ service
   # ---------------------
   rabbitmq:
-    image: "rabbitmq:3-management-alpine"
+    image: "rabbitmq:4-management-alpine"
     hostname: "rabbitmq"
     environment:
       RABBITMQ_DEFAULT_VHOST: "/"
       RABBITMQ_DEFAULT_USER: "guest"
       RABBITMQ_DEFAULT_PASS: "guest"
-    ports:
-      - "15672:15672"
-      - "5672:5672"
     deploy:
       restart_policy:
         condition: on-failure
@@ -50,18 +34,38 @@ services:
   # HawkBit service
   # ---------------------
   hawkbit:
-    image: "hawkbit/hawkbit-update-server:0.8.0"
+    image: "hawkbit/hawkbit-update-server:0.9.0"
     environment:
-      - 'PROFILES=postgresql'
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hawkbit'
-      - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=admin'
-      - 'SPRING_RABBITMQ_HOST=rabbitmq'
-      - 'SPRING_RABBITMQ_USERNAME=guest'
-      - 'SPRING_RABBITMQ_PASSWORD=guest'
-      - 'SERVER_FORWARD-HEADERS-STRATEGY=NATIVE'
+        SPRING_APPLICATION_JSON: '{
+        "server.forward-headers-strategy": "native",
+        "spring.main.allow-bean-definition-overriding": true,
+        "spring.profiles.active": "postgresql",
+        "spring.datasource.url": "jdbc:postgresql://postgres:5432/hawkbit",
+        "spring.datasource.username": "postgres",
+        "spring.datasource.password": "admin",
+        "spring.rabbitmq.host": "rabbitmq",
+        "spring.rabbitmq.port": 5672,
+        "spring.rabbitmq.username": "guest",
+        "spring.rabbitmq.password": "guest",
+        "spring.rabbitmq.virtual-host": "/",
+        "hawkbit.server.ddi.security.authentication.anonymous.enabled": false,
+        "hawkbit.server.ddi.security.authentication.targettoken.enabled": true,
+        "hawkbit.server.ddi.security.authentication.gatewaytoken.enabled": true,
+        "hawkbit.server.controller.security.rp.enabled": true,
+        "hawkbit.server.controller.security.rp.cnHeader": "X-Ssl-Client-Cn",
+        "hawkbit.server.controller.security.rp.sslIssuerHashHeader": "X-Ssl-Issuer-Hash-1",
+        "hawkbit.server.controller.pollingTime": "00:00:30",
+        "hawkbit.server.ddi.security.authentication.header.enabled": true,
+        "hawkbit.server.ddi.security.authentication.header.authority": "Hawkbit",
+        "hawkbit.server.repository.publish-target-poll-event": false,
+        "hawkbit.security.user.admin.password": "{noop}12345678",
+        "hawkbit.security.user.admin.firstname": "Eclipse",
+        "hawkbit.security.user.admin.lastname": "HawkBit",
+        "hawkbit.security.user.admin.email": "mbs-linux@test.pl",
+        "hawkbit.security.user.admin.permissions": "ALL",
+      }'
     volumes:
-      - artifactrepo:/artifactrepo
+      - artifactrepo:/app/artifactrepo
     restart: always
     ports:
       - "8090:8080"
@@ -75,7 +79,7 @@ services:
   # HawkBit Simple UI service
   # ---------------------
   hawkbit-simple-ui:
-    image: "hawkbit/hawkbit-simple-ui:0.8.0"
+    image: "hawkbit/hawkbit-simple-ui:0.9.0"
     environment:
       - 'SPRING_APPLICATION_JSON={"hawkbit.server.mgmtUrl": "http://hawkbit:8080"}'
     restart: always
